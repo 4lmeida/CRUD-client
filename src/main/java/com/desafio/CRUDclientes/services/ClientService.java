@@ -20,7 +20,6 @@ public class ClientService {
 	public ClientDTO findById(Long id) {
 		Client client = repository.findById(id).get();
 		return new ClientDTO(client);
-		
 	}
 	
 	@Transactional(readOnly = true)
@@ -52,6 +51,11 @@ public class ClientService {
 		entity.setIncome(dto.getIncome());
 		entity.setBirthDate(dto.getBirthDate());
 		entity.setChildren(dto.getChildren());
+	}
+	
+	@Transactional
+	public void delete(Long id) {
+		repository.deleteById(id);
 	}
 	
 	
