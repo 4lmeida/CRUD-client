@@ -1,6 +1,7 @@
 package com.desafio.CRUDclientes.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.desafio.CRUDclientes.dto.ClientDTO;
 import com.desafio.CRUDclientes.entities.Client;
 import com.desafio.CRUDclientes.repositories.ClientRepository;
+import com.desafio.CRUDclientes.services.exceptions.DatabaseException;
 import com.desafio.CRUDclientes.services.exceptions.ResourceNotFoundException;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -35,10 +37,16 @@ public class ClientService {
 
 	@Transactional
 	public ClientDTO insert(ClientDTO dto) {
-		Client entity = new Client();
-		copyDtoToEntity(dto, entity);
-		entity = repository.save(entity);
-		return new ClientDTO(entity);
+		try {
+			Client entity = new Client();
+			copyDtoToEntity(dto, entity);
+			entity = repository.save(entity);
+			return new ClientDTO(entity);
+		}
+		catch(DataIntegrityViolationException e) {
+			throw new DatabaseException("Falha de integridade referencial");
+		}
+
 	}
 
 	@Transactional
