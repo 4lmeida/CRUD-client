@@ -1,6 +1,7 @@
 package com.desafio.CRUDclientes.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -9,26 +10,30 @@ import org.springframework.transaction.annotation.Transactional;
 import com.desafio.CRUDclientes.dto.ClientDTO;
 import com.desafio.CRUDclientes.entities.Client;
 import com.desafio.CRUDclientes.repositories.ClientRepository;
+import com.desafio.CRUDclientes.services.exceptions.ResourceNotFoundException;
+
+import jakarta.persistence.EntityNotFoundException;
 
 @Service
 public class ClientService {
-	
+
 	@Autowired
 	private ClientRepository repository;
-	
+
 	@Transactional(readOnly = true)
 	public ClientDTO findById(Long id) {
-		Client client = repository.findById(id).get();
+		Client client = repository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Recurso não encontrado"));
 		return new ClientDTO(client);
 	}
-	
+
 	@Transactional(readOnly = true)
 	public Page<ClientDTO> findAll(Pageable pageable) {
 		Page<Client> result = repository.findAll(pageable);
 		return result.map(x -> new ClientDTO(x));
-		
+
 	}
-	
+
 	@Transactional
 	public ClientDTO insert(ClientDTO dto) {
 		Client entity = new Client();
@@ -36,13 +41,30 @@ public class ClientService {
 		entity = repository.save(entity);
 		return new ClientDTO(entity);
 	}
-	
+
 	@Transactional
 	public ClientDTO update(Long id, ClientDTO dto) {
-		Client entity = repository.getReferenceById(id);
-		copyDtoToEntity(dto, entity);
-		entity = repository.save(entity);
-		return new ClientDTO(entity);
+		try {
+			Client entity = repository.getReferenceById(id);
+			copyDtoToEntity(dto, entity);
+			entity = repository.save(entity);
+			return new ClientDTO(entity);
+
+		} 
+		catch (EntityNotFoundException e) {
+			throw new ResourceNotFoundException("Recurso não encontrado");
+		}
+	}
+
+	@Transactional
+	public void delete(Long id) {
+		try {
+			repository.deleteById(id);
+		}
+		catch(EmptyResultDataAccessException e) {
+			throw new ResourceNotFoundException("Recurso não encontrado");
+		}
+		
 	}
 
 	private void copyDtoToEntity(ClientDTO dto, Client entity) {
@@ -52,11 +74,5 @@ public class ClientService {
 		entity.setBirthDate(dto.getBirthDate());
 		entity.setChildren(dto.getChildren());
 	}
-	
-	@Transactional
-	public void delete(Long id) {
-		repository.deleteById(id);
-	}
-	
-	
+
 }
